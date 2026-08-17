@@ -1,0 +1,12 @@
+[package]
+name = "img2webp"
+version = "0.1.0"
+edition = "2024"
+description = "CLI tool to convert images to WebP format"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.6", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "bmp", "tiff"] }
+zenwebp = "0.4"
+rayon = "1.10"

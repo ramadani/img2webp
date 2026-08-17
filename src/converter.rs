@@ -3,6 +3,7 @@ use std::path::Path;
 
 use image::imageops::FilterType;
 use image::ImageReader;
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use zenwebp::{EncodeRequest, LosslessConfig, LossyConfig, PixelLayout};
 
@@ -72,13 +73,21 @@ pub fn convert_bulk(
         }
     }
 
-    files
+    let pb = create_progress_bar(files.len() as u64);
+
+    let results: Vec<ConvertResult> = files
         .par_iter()
+        .progress_with(pb.clone())
         .map(|input| {
             let output = build_output_path(input, output_dir);
-            convert_single(input, &output, opts)
+            let result = convert_single(input, &output, opts);
+            pb.set_message(input.file_name().unwrap_or_default().to_string_lossy().to_string());
+            result
         })
-        .collect()
+        .collect();
+
+    pb.finish_and_clear();
+    results
 }
 
 /// Convert all images in a directory to an output directory.
@@ -106,8 +115,11 @@ pub fn convert_dir(
         return Vec::new();
     }
 
-    files
+    let pb = create_progress_bar(files.len() as u64);
+
+    let results: Vec<ConvertResult> = files
         .par_iter()
+        .progress_with(pb.clone())
         .map(|input| {
             // Preserve subdirectory structure in output.
             let relative = input
@@ -121,9 +133,14 @@ pub fn convert_dir(
                 let _ = ensure_dir_exists(parent);
             }
 
-            convert_single(input, &out_path, opts)
+            let result = convert_single(input, &out_path, opts);
+            pb.set_message(input.file_name().unwrap_or_default().to_string_lossy().to_string());
+            result
         })
-        .collect()
+        .collect();
+
+    pb.finish_and_clear();
+    results
 }
 
 /// Internal: perform the actual file conversion.
@@ -165,6 +182,18 @@ fn convert_file(input: &Path, output: &Path, opts: &ConvertOptions) -> Result<u6
     fs::write(output, &webp_bytes)?;
 
     Ok(webp_bytes.len() as u64)
+}
+
+/// Create a styled progress bar.
+fn create_progress_bar(total: u64) -> ProgressBar {
+    let pb = ProgressBar::new(total);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{elapsed_precise} [{bar:40.green/dim}] {pos}/{len} ({eta}) {msg}")
+            .unwrap()
+            .progress_chars("██░"),
+    );
+    pb
 }
 
 /// Print a summary of conversion results.

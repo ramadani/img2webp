@@ -3,7 +3,7 @@ use std::path::Path;
 
 use image::imageops::FilterType;
 use image::ImageReader;
-use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use zenwebp::{EncodeRequest, LosslessConfig, LossyConfig, PixelLayout};
 
@@ -77,11 +77,11 @@ pub fn convert_bulk(
 
     let results: Vec<ConvertResult> = files
         .par_iter()
-        .progress_with(pb.clone())
         .map(|input| {
             let output = build_output_path(input, output_dir);
             let result = convert_single(input, &output, opts);
             pb.set_message(input.file_name().unwrap_or_default().to_string_lossy().to_string());
+            pb.inc(1);
             result
         })
         .collect();
@@ -119,7 +119,6 @@ pub fn convert_dir(
 
     let results: Vec<ConvertResult> = files
         .par_iter()
-        .progress_with(pb.clone())
         .map(|input| {
             // Preserve subdirectory structure in output.
             let relative = input
@@ -135,6 +134,7 @@ pub fn convert_dir(
 
             let result = convert_single(input, &out_path, opts);
             pb.set_message(input.file_name().unwrap_or_default().to_string_lossy().to_string());
+            pb.inc(1);
             result
         })
         .collect();

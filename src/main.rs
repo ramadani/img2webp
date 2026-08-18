@@ -70,6 +70,10 @@ enum Commands {
         /// Resize height (pixels)
         #[arg(long)]
         height: Option<u32>,
+
+        /// Number of parallel threads (default: half of CPU cores)
+        #[arg(short, long)]
+        threads: Option<usize>,
     },
 
     /// Convert all images in a directory to an output directory
@@ -99,7 +103,29 @@ enum Commands {
         /// Resize height (pixels)
         #[arg(long)]
         height: Option<u32>,
+
+        /// Number of parallel threads (default: half of CPU cores)
+        #[arg(short, long)]
+        threads: Option<usize>,
     },
+}
+
+/// Initialize rayon's global thread pool.
+///
+/// Returns the number of threads that will be used.
+/// Defaults to half of available CPU cores if not specified.
+fn init_thread_pool(threads: Option<usize>) -> usize {
+    let available = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1);
+    let num_threads = threads.unwrap_or(available / 2).max(1);
+
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build_global()
+        .ok();
+
+    num_threads
 }
 
 fn main() {
@@ -138,6 +164,7 @@ fn main() {
             lossless,
             width,
             height,
+            threads,
         } => {
             let opts = ConvertOptions {
                 quality,
@@ -150,7 +177,8 @@ fn main() {
                 .filter_map(|f| std::fs::metadata(f).ok())
                 .map(|m| m.len())
                 .sum();
-            println!("Converting {} files ({}) ...", files.len(), format_size(total_size));
+            let num_threads = init_thread_pool(threads);
+            println!("Converting {} files ({}) using {} threads ...", files.len(), format_size(total_size), num_threads);
             let start = Instant::now();
             let results = convert_bulk(&files, output.as_deref(), &opts);
             let elapsed = start.elapsed();
@@ -166,6 +194,7 @@ fn main() {
             recursive,
             width,
             height,
+            threads,
         } => {
             let opts = ConvertOptions {
                 quality,
@@ -174,10 +203,12 @@ fn main() {
                 height,
             };
 
+            let num_threads = init_thread_pool(threads);
             println!(
-                "Converting from {} to {} ...",
+                "Converting from {} to {} using {} threads ...",
                 input_dir.display(),
                 output_dir.display(),
+                num_threads,
             );
             let start = Instant::now();
             let results = convert_dir(&input_dir, &output_dir, &opts, recursive);

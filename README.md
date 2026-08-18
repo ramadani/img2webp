@@ -12,6 +12,8 @@ Uses [zenwebp](https://crates.io/crates/zenwebp) (pure-Rust, SIMD-accelerated) f
 - **Lossy & lossless** WebP encoding
 - **Adjustable quality** (1–100, default: 80)
 - **Optional resize** by width and/or height
+- **Thread control** to manage CPU usage (`-t, --threads`)
+- **Progress bar** with ETA for bulk and directory conversions
 - **Preserves directory structure** when converting folders
 
 ## Supported Input Formats
@@ -67,6 +69,9 @@ img2webp bulk image1.png image2.jpg image3.bmp
 
 # Output to a specific directory
 img2webp bulk *.png -o ./webp_output -q 85
+
+# Limit to 2 threads
+img2webp bulk *.png -o ./webp_output -t 2
 ```
 
 ### Convert an entire directory
@@ -80,6 +85,9 @@ img2webp dir ./images ./webp_output -q 90 -r
 
 # Lossless conversion of an entire folder
 img2webp dir ./images ./webp_output --lossless -r
+
+# Limit CPU usage to 4 threads
+img2webp dir ./images ./webp_output -r -t 4
 ```
 
 ## Options Reference
@@ -99,6 +107,12 @@ img2webp dir ./images ./webp_output --lossless -r
 | `-l, --lossless` | `false` | Use lossless encoding |
 | `--width <WIDTH>` | — | Resize width in pixels |
 | `--height <HEIGHT>` | — | Resize height in pixels |
+
+### `bulk` and `dir` shared options
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `-t, --threads <THREADS>` | half of CPU cores | Number of parallel threads |
 
 ### `single`
 
@@ -121,6 +135,21 @@ img2webp dir ./images ./webp_output --lossless -r
 | `<INPUT_DIR>` | Source directory |
 | `<OUTPUT_DIR>` | Destination directory |
 | `-r, --recursive` | Scan subdirectories recursively |
+
+## Performance Tips
+
+- **Always use release builds** for real workloads. Debug builds are 10–20x slower:
+  ```bash
+  cargo run --release -- dir ./images ./output -r
+  ```
+- **Thread control**: By default, `img2webp` uses half of your CPU cores. Use `-t` to adjust:
+  ```bash
+  # Use only 2 threads (low CPU usage)
+  img2webp dir ./images ./output -r -t 2
+
+  # Use all 8 cores (maximum speed)
+  img2webp dir ./images ./output -r -t 8
+  ```
 
 ## Development
 

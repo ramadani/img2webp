@@ -22,6 +22,24 @@ PNG, JPEG, BMP, GIF, TIFF
 
 ## Installation
 
+### Download pre-built binary
+
+Download the latest binary for your platform from the [Releases](https://github.com/ramadani/img2webp/releases) page.
+
+| Platform | File |
+|----------|------|
+| Linux (x86_64) | `img2webp-*-x86_64-unknown-linux-gnu.tar.gz` |
+| Linux (ARM64) | `img2webp-*-aarch64-unknown-linux-gnu.tar.gz` |
+| macOS (Intel) | `img2webp-*-x86_64-apple-darwin.tar.gz` |
+| macOS (Apple Silicon) | `img2webp-*-aarch64-apple-darwin.tar.gz` |
+| Windows (x86_64) | `img2webp-*-x86_64-pc-windows-msvc.zip` |
+
+```bash
+# Example: download and install on macOS/Linux
+tar xzf img2webp-*.tar.gz
+sudo mv img2webp /usr/local/bin/
+```
+
 ### From source
 
 Requires [Rust](https://rustup.rs/) 1.85+.
